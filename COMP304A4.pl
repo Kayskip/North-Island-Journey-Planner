@@ -3,8 +3,6 @@
     ID : 300417869
     COMP304 Assignment 4 : (More Prolog)
     Due Date: 4th June.
-    
-
 
     1. North Island Journey Planner
 
@@ -39,7 +37,10 @@
     should succeed if there is a route from Start to Finish visiting the towns in
     list Visits.
 
-    Below I have listed all the roads into the route format of, route(Start, Finish, Visits).
+    Comments:
+    Below I have listed all the journeys into the road predicate.
+    I have done this so it can be accessed during routing.
+
 */
 
 road(wellington, palmerston_north, 143).
@@ -60,4 +61,29 @@ road(gisborne, rotorua, 291).
 road(rotorua, hamilton, 109).
 road(hamilton, auckland, 126).
 
-route(Start, Finish, Visits):- road(From, To, Visits).
+/*
+    1.2 Route Planning
+    Write a predicate route/3 to plan routes: route(Start, Finish, Visits)
+    should succeed if there is a route from Start to Finish visiting the towns in
+    list Visits.
+
+    Comments:
+    I have created the route/3 predicate to take the start and finish location.
+    From here I have called apon the road predicate, which can also be reversed in order to calculate both possibilities.
+    This means route is defined as either a road from start to finish or finish to start.
+
+*/
+
+route(Start, Finish, Visits):- road(Start, Finish, Visits); road(Finish, Start, Visits).
+
+/*
+    1.3 Route Planning With Distances
+    Write a predicate route/4 to plan routes: route(Start, Finish, Visits,
+    Distance) should succeed if there is a route from Start to Finish, visiting the
+    towns in list Visits, which is Distance long
+
+     Comments:
+     This predicate is route/4 which takes a start, finish, visits and distance.
+*/
+
+route(Start, Finish, Visits, Distance).
