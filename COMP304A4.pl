@@ -36,7 +36,6 @@
     I have done this so it can be accessed during routing.
 
 */
-
 road(wellington, palmerston_north, 143).
 road(palmerston_north, wanganui, 74).
 road(palmerston_north, napier, 178).
@@ -54,27 +53,28 @@ road(taupo, gisborne, 334).
 road(gisborne, rotorua, 291).
 road(rotorua, hamilton, 109).
 road(hamilton, auckland, 126).
-
 /*
     Comments:
     I have created the route/3 predicate to take the start and finish location, as well as a list of places to be visited.
     Firstly, our base case checks when its an empty list (after recursing) calling apon the road and returning true.
     The main part of the predicate is to recurse through the road segments with the head of the locations to visit,
     from here we recurse on the head and check to see if theres another path from the head, parsing the finish and list
-    of places to visit. If there is a path then this will return true.
+    of places to visit. If there is a path then this will return true. The base case of this predicate disregards the distances
+    as the start and finish should be the same when the list is empty.
 */
-
 route(Start, Finish,[]):- road(Start, Finish,_).
 route(Start, Finish, [Head | Visits]):- road(Start, Head, _),route(Head, Finish, Visits),!.
-
 /*
     Comments:
     Here we have the base case for the route, this is when the list is empty(finished). 
-    We need to check to see if our Result is correct and should == 0.
-    All we are doing is subtracting the Distance to be stored in our result, this is so we can use it later
-    to check if its == 0 in our base case. This means the route was successful, returning true if correct.
+    We need to check to see if our Result is correct and should == 0. The reason we check for 0 is because we are subtracting 
+    the overall distance by each individual path. This should result is the final distance being 0 if it is 
+    successful. All we are doing is subtracting the Distance to be stored in our result, this will then return true
+    if the predicate succeeds.
+    The main route/4 predicte calls upon the road predicate, this is so we can get the desired distance (X) and create
+    an Atom Result which is the overall distance-X. This is the updated result we want as we repeat the process and recurse through out 
+    the entire list of visits until its empty. Which is where our base case comes in handy.
 */
-
 route(Start,Finish,[],Distance):- road(Start, Finish, X),
                                   Result is (Distance-X), 
                                  (Result == 0).
@@ -82,7 +82,6 @@ route(Start,Finish,[],Distance):- road(Start, Finish, X),
 route(Start,Finish,[Head | Visits], Distance):- road(Start, Head, X),
                                                 Result is (Distance-X), 
                                                 route(Head, Finish, Visits, Result).
-
 /*
     1.4 Finding All Routes
     There is a predefined Prolog predicate findall/3 which you can use to find
@@ -99,23 +98,14 @@ route(Start,Finish,[Head | Visits], Distance):- road(Start, Head, X),
     should produce a list of all the routes (including their distances) between Start and Finish.
 
     Comments:
-    We need to have visited predicate in order to use back tracking properly
-    What this does is take the head of the list and compares it to the visited list, it recurses on this until
-    the list is empty. Here we are utilising the inbuilt predicate member, which is True if Elem is a member of List
-*/
-
-visited([],_).
-visited([Head | Visits], Visited) :- member(Head, Visited), visited(Visits, Visited).
-
-/*
-    Comments:
+    This was by far the hardest part of the assignment.
+    I have made roads as a helper predicate for the choice predicate. This pedicate gets all the roads from
+    start to finish via the traverse predicate. Here we will reverse the list to ensure its in the order that we traversed.
     we are also utilising the reverse predicate which: Is true when the elements of List2 are in reverse order compared to List1.
     this is helpful to also output our lists as it also writes.
     roads calls the traverse predicate and is used to gather the traversed data
 */
-
 roads(Start, Finish, Visited, Distance) :- traverse(Start, Finish, [Start], X, Distance),  reverse(X, Visited).
-
 /*
     Comments:
     base case traverse predicate returns true if the road is true, meaning
@@ -129,13 +119,11 @@ roads(Start, Finish, Visited, Distance) :- traverse(Start, Finish, [Start], X, D
     # routing(Start, Finish, [Start, Finish], Distance) :- route(Start, Finish,Distance).
     # routing(Start, Finish, [Start|Connections]) :- route(Start, ToConnection, X), Y is Distance-X, routing(ToConnection, Finish, Connections,Y).
 */
-
 traverse(Start, Finish, Visited, [Finish | Visited], Distance) :- road(Start, Finish, Distance).
 traverse(Start, Finish, Visited, Visits, Distance) :- road(Start, Town, DistanceToTown), 
                                                     Town \= Finish, not(member(Town, Visited)),
                                                     traverse(Town, Finish, [Town | Visited], Visits, DistanceToTownNew),
                                                     Distance is DistanceToTown + DistanceToTownNew.
- 
 /*
     Comments:
     finds all the routes and distances between start and finish
@@ -144,13 +132,11 @@ traverse(Start, Finish, Visited, Visits, Distance) :- road(Start, Town, Distance
     findall combines them all into a list, this is helpful to store the distances of our
     desired journey, working out implementation of the distances took the most time >:(
 */
-
 choice(Start, Finish, RoutesAndDistances) :- findall((Visited, Distance), 
                                              roads(Start, Finish, Visited, Distance), RoutesAndDistances),!.
 
 choice(Start,Finish,RoutesAndDistances):-findall((Visits,Distance), 
                                          roads(Start, Finish, Visits, Distance), RoutesAndDistances).
-
 /*
     1.4.1 Finding All Routes Including Towns
     Write a predicate via/4 to help planning routes: via(Start, Finish, Via,
@@ -164,28 +150,31 @@ choice(Start,Finish,RoutesAndDistances):-findall((Visits,Distance),
     we filter that sh*t down so we only get routes that only visit the towns within via 
 
     I made the helper method visited which handles the recursion etc so we can check if we have visited the town or not
-    and all that does is grab the desired var and 
+    and all that does is grab the desired var and check to see if its a member of the visited list, YAY
 */
-via(Start, Finish, Via, RoutesAndDistances) :- findall((Visited), (roads(Start, Finish, Visited, Distance), visited(Via, Visited)), RoutesAndDistances).
-
+via(Start, Finish, Via, RoutesAndDistances) :- findall((Visited), 
+                                             (roads(Start, Finish, Visited, Distance), visited(Via, Visited)), RoutesAndDistances).
+/*
+  Comments:
+    We need to have visited predicate in order to use back tracking properly
+    What this does is take the head of the list and compares it to the visited list, it recurses on this until
+    the list is empty. Here we are utilising the inbuilt predicate member, which is True if Elem is a member of List.
+*/
+visited([],_).
+visited([Head | Visits], Visited) :- member(Head, Visited), visited(Visits, Visited).
 /*
     Comments:
     This is a helper method which does the opposite affect to visited
     and avoids locations.
     again this was easy because its basically the same concept just altered
-    here we are using findall again! we want 
-    
+    here we are using findall again! 
  */
-
-
 avoiding(Start, Finish, Avoiding, RoutesAndDistances) :- findall((Visited,Distance),
-                                                        (routes(Start, Finish, Visited, Distance), avoided(Avoiding, Visited)), RoutesAndDistances).
+                                                        (roads(Start, Finish, Visited, Distance), avoided(Avoiding, Visited)), RoutesAndDistances).
 
 avoided([],_).
-avoided([Head | Avoid], Visited) :-
-   not(member(Head, Visited)),
-   avoided(Avoid, Visited).
- 
+avoided([Head | Avoid], Visited) :- not(member(Head, Visited)), 
+                                    avoided(Avoid, Visited).
 /*
     1.4.3 Testing
     Give Prolog queries to show that route/4, choice/3, via/4 and avoiding/4
@@ -193,9 +182,9 @@ avoided([Head | Avoid], Visited) :-
 
     Comments:
     You can either run each test individually, or execute run().
-    this will run each individual test and return an overall result
+    this will run each individual test and return an overall result.
+    it was very annoying trying to format these because of the excessive paths,
 */
-
 test1() :- route(wellington, taupo, [palmerston_north], 402),!.
 test2() :- route(taupo, hamilton, [gisborne, rotorua], 734),!.
 test3() :- route(wellington, auckland, [palmerston_north,taupo,gisborne,rotorua,hamilton],1262),!.
@@ -206,7 +195,13 @@ test6() :- choice(wellington, wanganui, Routes), write(Routes),!.
 test7() :- choice(wellington, auckland, Routes), write(Routes),!.
 test8() :- choice(new_plymouth, gisborne, Routes), write(Routes),!.
 
-test9() :- via(),!.
+test9() :- via(new_plymouth, auckland, [hamilton], Routes), write(Routes).
+test10() :- via(new_plymouth, auckland, [taupo], Routes), write(Routes).
+test11() :- via(wellington, new_plymouth, [wanganui], Routes), write(Routes).
+
+test12() :- avoiding(new_plymouth, wellington, [napier], Routes), write(Routes).
+test13() :- avoiding(wellington, rotorua, [wanganui, taupo], Routes), write(Routes).
+
 
 
 run() :-   test1(), 
@@ -216,6 +211,12 @@ run() :-   test1(),
            test5(),
            test6(),
            test7(),
+           test8(),
+           test9(),
+           test10(),
+           test11(),
+           test12(),
+           test13(),
            !.
 
 /* 
